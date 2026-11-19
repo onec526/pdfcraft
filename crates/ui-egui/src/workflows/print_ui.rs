@@ -709,10 +709,11 @@ impl PdfCraftApp {
             };
             // On Windows grayscale makes the pages grey (#5806) and large pictures become tiles
             // (#5131): work on the whole file, kept off the UI thread with the rest.
-            // A GDI (v3) driver gets transparent sheets flattened (#6155, #5838, #5940); XPS (v4)
-            // drivers print them as they are.
-            let flatten = job.printer.as_deref().is_some_and(spool::gdi_driver);
-            let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, flatten);
+            // `craft-print` now routes transparent sheets on Windows GDI (v3) drivers directly
+            // through `GdiPdfPrinter` (Direct2D opaque bitmap rendering), avoiding XPS-to-GDI
+            // transparency defects (#5838, #5940, #6155) without CPU tile-flattening or 600 DPI
+            // `XpsGdiConverter` raster explosion (#4509).
+            let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, false);
             // The receiver may be gone (the app quit): nothing to report to then.
             let result = match &spooler {
                 Some(submit) => submit(&bytes, &job),

@@ -408,10 +408,11 @@ impl Automation {
                 out["path"] = json!(path.to_string_lossy());
             }
             Destination::Printer(mut job) => {
-                // A GDI (v3) driver gets transparent sheets flattened (#6155, #5838, #5940); XPS
-                // (v4) drivers print them as they are.
-                let flatten = job.printer.as_deref().is_some_and(spool::gdi_driver);
-                let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, flatten);
+                // `craft-print` now routes transparent sheets on Windows GDI (v3) drivers directly
+                // through `GdiPdfPrinter` (Direct2D opaque bitmap rendering), avoiding XPS-to-GDI
+                // transparency defects (#5838, #5940, #6155) without CPU tile-flattening or 600 DPI
+                // `XpsGdiConverter` raster explosion (#4509).
+                let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, false);
                 out["job"] = json!(spool::submit(&bytes, &job).map_err(|e| failed(e.to_string()))?);
             }
         }

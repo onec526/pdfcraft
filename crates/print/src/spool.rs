@@ -436,13 +436,13 @@ pub fn submit(pdf: &[u8], job: &Job) -> Result<String, crate::PrintError> {
     if let Some(dll) = missing_print_dll() {
         return Err(unavailable(dll));
     }
+    let pdf = spooled_pdf(pdf, crate::font_names::RENAME_FOR_SPOOLER);
     #[cfg(windows)]
     let _provider = print_ticket_provider();
     #[cfg(windows)]
     let resolved = windows_duplex::job(job);
     #[cfg(windows)]
     let job = resolved.as_ref();
-    let pdf = spooled_pdf(pdf, crate::font_names::RENAME_FOR_SPOOLER);
     craft_print::submit(&pdf, &spooled(job)).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }
 
@@ -452,13 +452,13 @@ pub fn submit_with_progress(pdf: &[u8], job: &Job, progress: &mut dyn FnMut(usiz
     if let Some(dll) = missing_print_dll() {
         return Err(unavailable(dll));
     }
+    let pdf = spooled_pdf(pdf, crate::font_names::RENAME_FOR_SPOOLER);
     #[cfg(windows)]
     let _provider = print_ticket_provider();
     #[cfg(windows)]
     let resolved = windows_duplex::job(job);
     #[cfg(windows)]
     let job = resolved.as_ref();
-    let pdf = spooled_pdf(pdf, crate::font_names::RENAME_FOR_SPOOLER);
     craft_print::submit_with_progress(&pdf, &spooled(job), progress).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }
 
